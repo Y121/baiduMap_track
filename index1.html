@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>BaiduMaps</title>
+    <style type="text/css">
+    html,body{margin: 0;padding: 0;width: 100%;position: absolute;top: 0;left: 0;right: 0;bottom: 0;}
+    #maps{height: 100%;}
+    .anchorBL{display:block;}
+    </style>
+</head>
+<body>
+    <!-- AIzaSyCOo5QbwZVnhHqBhQvuYhBBYtA7QT-YYiM -->
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCOo5QbwZVnhHqBhQvuYhBBYtA7QT-YYiM&callback=initMap" async defer></script> -->
+
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=xxfPvUjT4BoIQLgnqNcxdDutYhwULtsp"></script>
+
+    <div id="maps"></div>
+
+    <script type="text/javascript">
+        var map;
+
+        //{ enableMapClick: false } 禁止点击景点火其他位置
+        map = new BMap.Map("maps", { enableMapClick: false });    // 创建地图实例
+        var point = new BMap.Point(112.8886336790,28.2355639779);// 创建点坐标
+        map.centerAndZoom(point, 19); // 初始化地图，设置中心点坐标和地图级别
+        map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放  
+
+        map.addControl(new BMap.MapTypeControl({ //添加可切换地图类型控件
+            mapTypes:[
+                BMAP_NORMAL_MAP,
+                BMAP_HYBRID_MAP
+            ]
+
+        }));
+        map.setMapType(BMAP_HYBRID_MAP);//设置地图类型控件
+
+        // var opts = {
+        //     anchor: BMAP_ANCHOR_BOTTOM_LEFT,//位置靠左
+        //     type: BMAP_NAVIGATION_CONTROL_ZOOM,// LARGE类型
+        //     offset: new BMap.Size(10, 50)
+        // }    
+        // map.addControl(new BMap.NavigationControl(opts));//添加
+
+        //panTo()方法将让地图平滑移动至新中心点，如果移动距离超过了当前地图区域大小，则地图会直跳到该点
+        // window.setTimeout(function(){
+        //     map.panTo(new BMap.Point(112.8801560000,28.2323220000));    
+        // }, 2000);
+
+        //以画多边形区域的方法画扇形区域 画出以point2点为圆心，半径为radius，夹角从sDegree到eDegree的扇形
+        //Sector1(point,300,10,60,"hello")
+        function Sector1(point2, radius, sDegree, eDegree, msg) {
+            var points = []; //创建构成多边形的点数组  
+            var step = ((eDegree - sDegree) / 100) || 10; //根据扇形的总夹角确定每步夹角度数，最大为10  
+            points.push(point2);
+            for(var i = sDegree; i < eDegree + 0.001; i += step) { //循环获取每步的圆弧上点的坐标，存入点数组 
+                points.push(EOffsetBearing(point2, radius, i));
+            }
+            points.push(point2);
+            var planepoint = points[1];
+            var myIcon = new BMap.Icon("./radarchart.png",
+                new BMap.Size(32, 32));
+            var marker = new BMap.Marker(point2, {
+                icon: myIcon
+            });
+            var opts = {
+                width : 200,     // 信息窗口宽度
+                height: 100,     // 信息窗口高度
+                title : "标题" , // 信息窗口标题
+                enableMessage:true,//设置允许信息窗发送短息
+            }
+            var infoWindow = new BMap.InfoWindow(msg, opts);  // 创建信息窗口对象 
+            marker.addEventListener("click", function(){          
+                map.openInfoWindow(infoWindow,point2); //开启信息窗口
+            });
+           
+            map.addOverlay(marker);
+            return points;
+        }
+
+        //使用数学的方法计算需要画扇形的圆弧上的点坐标
+        function EOffsetBearing(point3, dist, bearing) {
+            var lngConv = map.getDistance(point3, new BMap.Point(point3.lng + 0.1, point3.lat)) * 10; //计算1经度与原点的距离
+            var latConv = map.getDistance(point3, new BMap.Point(point3.lng, point3.lat + 0.1)) * 10; //计算1纬度与原点的距离
+            var lat = dist * Math.sin(bearing * Math.PI / 180) / latConv; //正弦计算待获取的点的纬度与原点纬度差
+            var lng = dist * Math.cos(bearing * Math.PI / 180) / lngConv; //余弦计算待获取的点的经度与原点经度差
+            return new BMap.Point(point3.lng + lng, point3.lat + lat);
+        }
+
+        var chooseColor = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+        function random(lower, upper) {
+            return Math.floor(Math.random() * (upper - lower)) + lower;
+        }
+        var pt = [
+            [112.8886336790,28.2355639779,'我是第一个标注信息'],
+            [112.8866690000,28.2355600000,'我是第二个标注信息'],
+            [112.8876650000,28.2373260000,'我是第三个标注信息']];
+        for(var i=0;i<pt.length;i++){
+
+            var oval = new BMap.Polygon(Sector1(new BMap.Point(pt[i][0],pt[i][1]),100,random(0,360),random(0,360),pt[i][2]), {
+                strokeColor: 'red',
+                strokeWeight: 0,
+                strokeOpacity: 0.1,
+                fillColor:'rgba(179, 220, 92,1)'
+            });
+            map.addOverlay(oval);
+        }
+       
+    </script>
+</body>
+</html>
